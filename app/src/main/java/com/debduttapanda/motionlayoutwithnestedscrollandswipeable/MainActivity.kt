@@ -3,7 +3,6 @@ package com.debduttapanda.motionlayoutwithnestedscrollandswipeable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,16 +23,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.debugInspectorInfo
-import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.*
 import com.debduttapanda.motionlayoutwithnestedscrollandswipeable.ui.theme.MotionLayoutWithNestedScrollAndSwipeableTheme
 import java.util.*
 
-enum class SwipingStates {
+enum class SwipingStates {//our own enum class for stoppages e.g. expanded and collapsed
     EXPANDED,
     COLLAPSED
 }
@@ -50,11 +46,11 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) {
                     val swipingState = rememberSwipeableState(initialValue = SwipingStates.EXPANDED)
-                    BoxWithConstraints(
+                    BoxWithConstraints(//to get the max height
                         modifier = Modifier.fillMaxSize()
                     ) {
                         val heightInPx = with(LocalDensity.current) { maxHeight.toPx() }
-                        val connection = remember {
+                        val nestedScrollConnection = remember {
                             object : NestedScrollConnection {
                                 override fun onPreScroll(
                                     available: Offset,
@@ -89,21 +85,23 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Box(
+                        Box(//root container
                             modifier = Modifier
                                 .fillMaxSize()
                                 .swipeable(
                                     state = swipingState,
-                                    thresholds = { _, _ -> FractionalThreshold(0.05f) },
+                                    thresholds = { _, _ ->
+                                        FractionalThreshold(0.05f)//it can be 0.5 in general
+                                    },
                                     orientation = Orientation.Vertical,
                                     anchors = mapOf(
-                                        0f to SwipingStates.COLLAPSED,
-                                        heightInPx to SwipingStates.EXPANDED,
+                                        0f to SwipingStates.COLLAPSED,//min height is collapsed
+                                        heightInPx to SwipingStates.EXPANDED,//max height is expanded
                                     )
                                 )
-                                .nestedScroll(connection)
+                                .nestedScroll(nestedScrollConnection)
                         ) {
-                            val computedProgress by remember {
+                            val computedProgress by remember {//progress value will be decided as par state
                                 derivedStateOf {
                                     if (swipingState.progress.to == SwipingStates.COLLAPSED)
                                         swipingState.progress.fraction
@@ -113,7 +111,6 @@ class MainActivity : ComponentActivity() {
                             }
                             val startHeightNum = 300
                             MotionLayout(
-                                debug = EnumSet.of(MotionLayoutDebugFlags.SHOW_ALL),
                                 modifier = Modifier.fillMaxSize(),
                                 start = ConstraintSet {
                                     val header = createRefFor("header")
@@ -178,6 +175,7 @@ class MainActivity : ComponentActivity() {
                                         .fillMaxWidth()
                                         .background(Color.White)
                                 ){
+                                    //content, not necessarily scrollable or list
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize()
                                     ){
